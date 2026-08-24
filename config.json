@@ -26,7 +26,12 @@
       "protocol": "vless",
       "settings": {
         "clients": [],
-        "decryption": "none"
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": 8081
+          }
+        ]
       },
       "streamSettings": {
         "network": "ws",
