@@ -1,11 +1,3 @@
-"""
-RailVPN — Simple VPN Management Panel for Railway
-A FastAPI app that manages Xray VLESS users through a web dashboard.
-
-Deploy: 
-- Push to GitHub → connect to Railway → set PORT=8080 → generate domain
-- Open the *.up.railway.app URL → login with ADMIN_PASSWORD
-"""
 from __future__ import annotations
 
 import json
@@ -24,12 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-# ---------- Config ----------
 APP_DIR = Path(__file__).parent
 CONFIG_PATH = Path(os.getenv("XRAY_CONFIG", "/etc/xray/config.json"))
 STATE_PATH = APP_DIR / "state.json"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
-PANEL_PASSWORD = os.getenv("PANEL_PASSWORD", "")  # optional extra layer
+PANEL_PASSWORD = os.getenv("PANEL_PASSWORD", "")
 SESSION_COOKIE = "railvpn_session"
 SESSION_TOKEN = os.getenv("SESSION_TOKEN", secrets.token_urlsafe(32))
 XRAY_API = "http://127.0.0.1:10085"
@@ -39,7 +30,6 @@ app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
 
 
-# ---------- State (users + traffic) ----------
 def load_state() -> dict[str, Any]:
     if STATE_PATH.exists():
         try:
@@ -54,9 +44,8 @@ def save_state(state: dict[str, Any]) -> None:
 
 
 def reload_xray() -> None:
-    """Reload Xray after config edit (SIGHUP)."""
     try:
-        result = subprocess.run(
+        subprocess.run(
             ["pkill", "-HUP", "xray"],
             capture_output=True,
             timeout=5,
@@ -66,7 +55,6 @@ def reload_xray() -> None:
 
 
 def update_xray_config(state: dict[str, Any]) -> None:
-    """Write state users into the Xray JSON config."""
     if not CONFIG_PATH.exists():
         return
     try:
@@ -88,13 +76,11 @@ def update_xray_config(state: dict[str, Any]) -> None:
     reload_xray()
 
 
-# ---------- Auth ----------
 def require_login(request: Request) -> bool:
     token = request.cookies.get(SESSION_COOKIE)
     return token == SESSION_TOKEN
 
 
-# ---------- Routes ----------
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if not require_login(request):
@@ -132,10 +118,9 @@ async def logout():
     return resp
 
 
-# ---------- API ----------
 class UserCreate(BaseModel):
     name: str
-    quota_gb: float = 0  # 0 = unlimited
+    quota_gb: float = 0
 
 
 @app.post("/api/users")
@@ -201,12 +186,10 @@ async def user_link(user_id: str, request: Request):
 
 @app.get("/sub/{user_id}", response_class=Response)
 async def subscription(user_id: str):
-    """Return the VLESS subscription link for a user."""
     state = load_state()
     if user_id not in state["users"]:
         raise HTTPException(404, "User not found")
     info = state["users"][user_id]
-    # Best-effort host detection (Railway sets RAILWAY_PUBLIC_DOMAIN)
     domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "your-domain.up.railway.app")
     link = (
         f"vless://{user_id}@{domain}:443"
@@ -218,7 +201,6 @@ async def subscription(user_id: str):
 
 @app.get("/api/stats")
 async def stats(request: Request):
-    """Pull live uplink/downlink from Xray StatsService for all users."""
     if not require_login(request):
         raise HTTPException(401, "Not authenticated")
     state = load_state()
@@ -247,7 +229,6 @@ async def stats(request: Request):
             }
     save_state(state)
 
-    # Auto-disable users who exceeded their quota
     for user_id, info in state.get("users", {}).items():
         quota_gb = info.get("quota_gb", 0)
         if quota_gb > 0 and info.get("used_bytes", 0) > quota_gb * 1024 ** 3:
@@ -259,6 +240,6 @@ async def stats(request: Request):
     return out
 
 
-@app.get("/health")
+@app.health if hasattr(app, "health") else app.get("/health")
 async def health():
     return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
