@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     py3-pip \
     jq \
     unzip \
+    nginx \
     && ln -sf /usr/share/zoneinfo/Asia/Tehran /etc/localtime
 
 ARG XRAY_VERSION=v1.8.24
@@ -27,9 +28,13 @@ RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 COPY app.py .
 COPY config.json /etc/xray/config.json
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY start.sh /app/start.sh
 COPY templates/ /app/templates/
 COPY static/ /app/static/
 
+RUN chmod +x /app/start.sh
+
 EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn app:app --host 127.0.0.1 --port 8081 & sleep 3 && xray -config /etc/xray/config.json"]
+CMD ["/app/start.sh"]
