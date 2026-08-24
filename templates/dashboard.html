@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>داشبورد — RailVPN</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <meta http-equiv="refresh" content="15">
+</head>
+<body>
+  <header>
+    <h1>🛡 RailVPN</h1>
+    <nav>
+      <span class="domain">🌐 {{ domain }}</span>
+      <a href="/logout">خروج</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>➕ ساخت کاربر جدید</h2>
+      <form id="createForm">
+        <input type="text" id="name" placeholder="نام کاربر" required>
+        <input type="number" id="quota" placeholder="سهمیه (گیگابایت، 0=نامحدود)" min="0" step="0.5" value="0">
+        <button type="submit">ساخت</button>
+      </form>
+      <p class="hint">سهمیه 0 یعنی نامحدود. کاربران پس از پر شدن سهمیه به‌طور خودکار غیرفعال می‌شوند.</p>
+    </section>
+
+    <section class="card">
+      <h2>👥 کاربران ({{ state.users|length }})</h2>
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>نام</th>
+            <th>UUID</th>
+            <th>ترافیک</th>
+            <th>سهمیه</th>
+            <th>وضعیت</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for uid, u in state.users.items() %}
+          <tr data-id="{{ uid }}" {% if u.disabled %}class="disabled"{% endif %}>
+            <td>{{ u.name }}</td>
+            <td><code class="uuid">{{ uid[:8] }}...</code></td>
+            <td class="traffic" data-uid="{{ uid }}">⏳</td>
+            <td>{{ u.quota_gb }} GB</td>
+            <td>
+              {% if u.disabled %}<span class="badge off">غیرفعال</span>
+              {% else %}<span class="badge on">فعال</span>{% endif %}
+            </td>
+            <td>
+              <button onclick="getLink('{{ uid }}')">📋 لینک</button>
+              <button onclick="toggleUser('{{ uid }}')">🔄</button>
+              <button onclick="deleteUser('{{ uid }}')" class="danger">🗑</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not state.users %}
+      <p class="empty">هنوز کاربری ساخته نشده. اولین کاربر را بسازید.</p>
+      {% endif %}
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    async function api(method, path, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const r = await fetch(path, opts);
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        throw new Error(e.detail || r.statusText);
+      }
+      return r.json();
+    }
+
+    function toast(msg, ok = true) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + (ok ? 'ok' : 'err');
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    document.getElementById('createForm').onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const data = await api('POST', '/api/users', {
+          name: document.getElementById('name').value,
+          quota_gb: parseFloat(document.getElementById('quota').value) || 0
+        });
+        toast('کاربر ساخته شد: ' + data.name);
+        setTimeout(() => location.reload(), 700);
+      } catch (e) { toast(e.message, false); }
+    };
+
+    async function getLink(uid) {
+      try {
+        const data = await api('GET', `/api/users/${uid}/link`);
+        await navigator.clipboard.writeText(data.link);
+        toast('لینک کپی شد!');
+      } catch (e) { toast(e.message, false); }
+    }
+
+    async function toggleUser(uid) {
+      try {
+        const data = await api('POST', `/api/users/${uid}/toggle`);
+        toast(data.disabled ? 'غیرفعال شد' : 'فعال شد');
+        setTimeout(() => location.reload(), 500);
+      } catch (e) { toast(e.message, false); }
+    }
+
+    async function deleteUser(uid) {
+      if (!confirm('از حذف این کاربر مطمئنی؟')) return;
+      try {
+        await api('DELETE', `/api/users/${uid}`);
+        toast('حذف شد');
+        setTimeout(() => location.reload(), 500);
+      } catch (e) { toast(e.message, false); }
+    }
+
+    // Refresh traffic numbers in-place every 15s
+    async function refreshTraffic() {
+      try {
+        const stats = await api('GET', '/api/stats');
+        for (const [uid, s] of Object.entries(stats)) {
+          const cell = document.querySelector(`tr[data-id="${uid}"] .traffic`);
+          if (cell) cell.textContent = formatBytes(s.total);
+        }
+      } catch (e) {}
+    }
+
+    function formatBytes(b) {
+      if (!b) return '0 B';
+      const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(b) / Math.log(1024));
+      return (b / Math.pow(1024, i)).toFixed(2) + ' ' + u[i];
+    }
+
+    refreshTraffic();
+    setInterval(refreshTraffic, 15000);
+  </script>
+</body>
+</html>
