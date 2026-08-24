@@ -1,9 +1,10 @@
+
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'uvicorn app:app --host 127.0.0.1 --port 8081 & xray -config /etc/xray/config.json'"
+startCommand = "sh -c 'uvicorn app:app --host 127.0.0.1 --port 8081 & sleep 3 && xray -config /etc/xray/config.json'"
 restartPolicyType = "always"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
