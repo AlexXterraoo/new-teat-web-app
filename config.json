@@ -21,17 +21,12 @@
     },
     {
       "tag": "vless-in",
-      "listen": "0.0.0.0",
-      "port": 8080,
+      "listen": "127.0.0.1",
+      "port": 10000,
       "protocol": "vless",
       "settings": {
         "clients": [],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": 8081
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "ws",
