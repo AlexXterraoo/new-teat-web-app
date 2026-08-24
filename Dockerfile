@@ -31,4 +31,4 @@ COPY templates/ /app/templates/
 COPY static/ /app/static/
 
 EXPOSE 8080
-CMD ["sh", "-c", "xray -config /etc/xray/config.json & uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "uvicorn app:app --host 127.0.0.1 --port 8081 & xray -config /etc/xray/config.json"]
