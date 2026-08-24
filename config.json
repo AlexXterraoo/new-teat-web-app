@@ -1,0 +1,46 @@
+{
+  "log": { "loglevel": "warning" },
+  "stats": {},
+  "policy": {
+    "levels": {
+      "0": { "statsUserUplink": true, "statsUserDownlink": true }
+    },
+    "system": { "statsInboundUplink": true, "statsInboundDownlink": true }
+  },
+  "api": {
+    "tag": "api",
+    "services": ["HandlerService", "StatsService"]
+  },
+  "inbounds": [
+    {
+      "tag": "api-in",
+      "listen": "127.0.0.1",
+      "port": 10085,
+      "protocol": "dokodemo-door",
+      "settings": { "address": "127.0.0.1" }
+    },
+    {
+      "tag": "vless-in",
+      "listen": "0.0.0.0",
+      "port": 8080,
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": { "path": "/railvpn" }
+      }
+    }
+  ],
+  "outbounds": [
+    { "protocol": "freedom" },
+    { "protocol": "blackhole", "tag": "blocked" }
+  ],
+  "routing": {
+    "rules": [
+      { "type": "field", "inboundTag": ["api-in"], "outboundTag": "api" }
+    ]
+  }
+}
