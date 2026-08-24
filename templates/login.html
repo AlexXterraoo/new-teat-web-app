@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>ورود — RailVPN</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="auth-page">
+  <div class="login-box">
+    <h1>🛡 RailVPN</h1>
+    <p class="subtitle">پنل مدیریت VPN</p>
+    <form method="POST" action="/login">
+      <input type="password" name="password" placeholder="رمز عبور" autofocus required>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <button type="submit">ورود</button>
+    </form>
+    <p class="hint">رمز پیش‌فرض: <code>admin</code> — بعد از ورود از طریق ENV <code>ADMIN_PASSWORD</code> تغییرش بده.</p>
+  </div>
+</body>
+</html>
