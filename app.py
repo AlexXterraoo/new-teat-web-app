@@ -31,12 +31,39 @@ templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
 
 
 def load_state() -> dict[str, Any]:
+    default_id = "b8313836-154f-428b-a790-123456789abc"
     if STATE_PATH.exists():
         try:
-            return json.loads(STATE_PATH.read_text())
+            state = json.loads(STATE_PATH.read_text())
+            if "users" not in state:
+                state["users"] = {}
+            if not state["users"]:
+                state["users"][default_id] = {
+                    "name": "DefaultUser",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "quota_gb": 100,
+                    "used_bytes": 0,
+                    "disabled": False,
+                }
+                save_state(state)
+            return state
         except Exception:
             pass
-    return {"users": {}, "created_at": datetime.now(timezone.utc).isoformat()}
+    
+    initial_state = {
+        "users": {
+            default_id: {
+                "name": "DefaultUser",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "quota_gb": 100,
+                "used_bytes": 0,
+                "disabled": False,
+            }
+        },
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    save_state(initial_state)
+    return initial_state
 
 
 def save_state(state: dict[str, Any]) -> None:
