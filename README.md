@@ -1,84 +1,33 @@
-# RailVPN — Custom VPN Management Panel for Railway
+# RailVPN - FastAPI & Xray on Railway
 
-A lightweight, self-hosted **VLESS + WebSocket + TLS** VPN panel built specifically for Railway (and any Docker host).
+A lightweight, stable, and easy-to-deploy VLESS-WebSocket proxy and management panel designed to run seamlessly on [Railway](https://railway.app).
 
-## ✨ Features
+---
 
-- 🛡 **VLESS + WS + TLS** outbound proxy (Xray-core inside the container)
-- 👥 **Multi-user** with per-user traffic quota (auto-disable when exceeded)
-- 📊 **Live traffic dashboard** — uplink/downlink refresh every 15s
-- 📋 **One-click copy** VLESS subscription links (v2rayNG / NekoBox / Clash)
-- 🌐 **Persian (RTL) UI** with dark mode
-- 🔐 **Cookie-session login** — set `ADMIN_PASSWORD` env to secure it
-- 🪶 **Tiny image** (Alpine + Python 3.12 + Xray, ~80 MB)
-- 💾 **State persists** in a Railway Volume mounted at `/app/state.json`
+## 🚀 Architecture & Overview / معماری و ساختار پروژه
 
-## 🚀 Deploy to Railway
+* 🌐 **Nginx (Port 8080):** دروازه ورودی و پروکسی معکوس برای مدیریت مسیرهای وب‌سکت و بررسی سلامت سرور (`/health` و `/railvpn`).
+* 💻 **FastAPI (Port 8081):** پنل مدیریت مبتنی بر پایتون برای نظارت بر وضعیت کاربران و ترافیک.
+* ⚡ **Xray Core (Port 10000):** هسته قدرتمند و پرسرعت برای پردازش اتصالات پروتکل VLESS.
 
-1. **Fork / push this repo to your GitHub.**
-2. On [railway.com](https://railway.com):
-   - **New Project → Deploy from GitHub repo** → pick this repo
-   - Railway auto-detects the `Dockerfile` and builds.
-3. **Set environment variables** (Variables tab):
+---
 
-   | Variable | Default | Notes |
-   |---|---|---|
-   | `PORT` | `8080` | Required — Railway forwards HTTP to this port |
-   | `ADMIN_PASSWORD` | `admin` | **Change this!** Your login password |
-   | `RAILWAY_PUBLIC_DOMAIN` | auto | Used to build the VLESS subscription URL |
+## ⚠️ Important Security Warning / هشدار امنیتی مهم
 
-4. **Add a Volume** (Settings → Volumes):
-   - Mount path: `/app`
-   - This persists `state.json` across redeploys.
+> پیش از استقرار نهایی، حتماً **UUIDهای پیش‌فرض** موجود در فایل `config.json` (بخش `clients`) را تغییر داده و مقادیر کاملاً اختصاصی و رندوم خود را جایگزین کنید. استفاده از UUIDهای مشترک یا پیش‌فرض باعث تداخل جدی در اتصال و ترافیک خواهد شد! 🔒
+> 
+> Make sure to generate your own unique UUIDs and replace the sample ones in the `config.json` file. Using shared UUIDs will cause connection conflicts.
 
-5. **Generate a public domain** (Settings → Networking → Generate Domain).
-   Open `https://<your-app>.up.railway.app` → log in with your password.
+---
 
-6. **Create users** in the dashboard → copy the VLESS link → import into **v2rayNG**, **NekoBox**, **Hiddify**, etc.
+## 🔗 VLESS Connection Template / فرمول لینک اتصال
 
-## 📲 Client setup
+```text
+vless://YOUR_UUID@YOUR_RAILWAY_APP.up.railway.app:443?encryption=none&security=tls&sni=YOUR_RAILWAY_APP.up.railway.app&type=ws&path=%2Frailvpn#username
+📌 راهنمای جایگذاری مقادیر:
 
-Paste the copied `vless://...` link into:
-- **Android**: v2rayNG, Hiddify, NekoBox
-- **iOS**: Streisand, V2Box, Shadowrocket
-- **Windows**: Nekoray, v2rayN
-- **macOS**: V2Box, V2RayXS
+    🔑 به جای عبارت YOUR_UUID: یکی از UUIDهای رندوم و اختصاصی خودتان (همان‌هایی که داخل فایل config.json ست کرده‌اید) را قرار دهید.
 
-All clients support the `vless://` URI scheme natively.
+    🌐 به جای عبارت YOUR_RAILWAY_APP.up.railway.app: آدرس دامنه فعال پروژه‌تان در رایلی (یا هر دامین اختصاصی دیگری) را وارد کنید.
 
-## ⚠️ Important notes
-
-- Railway provides **HTTPS for free** on the generated domain — TLS is handled by Railway's edge.
-- The VLESS inbound listens on `8080` internally; Railway's reverse proxy terminates TLS, then forwards to `ws://127.0.0.1:8080/railvpn`.
-- The subscription link in the panel hardcodes `port 443 + security=tls + sni=<your-domain>` because that's what Railway exposes publicly.
-- **Free Railway tier** ($5/mo credit) is enough for personal use with a handful of users.
-- ⚠️ **Reading the room**: Railway's ToS discourages heavy/proxy workloads. Heavy commercial use may get the workspace restricted — see your workspace dashboard for alerts.
-
-## 🛠 Local dev
-
-```bash
-pip install -r requirements.txt
-uvicorn app:app --reload --port 8080
-```
-
-Open http://localhost:8080.
-
-## 📁 File structure
-
-```
-railvpn/
-├── app.py              # FastAPI app — routes, auth, Xray management
-├── config.json         # Xray VLESS+WS inbound template
-├── Dockerfile          # Alpine + Xray + Python deps
-├── requirements.txt    # FastAPI, Jinja2, httpx
-├── railway.toml        # Railway deploy config
-├── templates/
-│   ├── login.html      # RTL Persian login page
-│   └── dashboard.html  # User management + traffic
-└── static/
-    └── style.css       # Dark-mode teal theme
-```
-
-## 📜 License
-
-MIT
+    👤 به جای عبارت username: یک نام دلخواه و نمایشی برای کانفیگ خود بنویسید (مثل user1 یا sdido) تا در برنامه‌ی کلاینت شناسایی شود.
