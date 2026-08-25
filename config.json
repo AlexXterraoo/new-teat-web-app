@@ -25,7 +25,12 @@
       "port": 10000,
       "protocol": "vless",
       "settings": {
-        "clients": [],
+        "clients": [
+          {
+            "id": "72a60950-c626-4cb4-a612-99a466a30ce0",
+            "email": "sdido"
+          }
+        ],
         "decryption": "none"
       },
       "streamSettings": {
