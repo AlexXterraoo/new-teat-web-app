@@ -29,14 +29,6 @@
           {
             "id": "2d28f01b-9f9b-432d-9481-9b19dfb4a401",
             "email": "user1"
-          },
-          {
-            "id": "4a8f9c12-3e21-4f81-98bc-712856417efc",
-            "email": "user2"
-          },
-          {
-            "id": "b6e92714-8f1e-42c9-a513-81c209485b03",
-            "email": "user3"
           }
         ],
         "decryption": "none"
