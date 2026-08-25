@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 APP_DIR = Path(__file__).parent
-CONFIG_PATH = Path(os.getenv("XRAY_CONFIG", "/etc/xray/config.json"))
+CONFIG_PATH = Path(os.getenv("XRAY_CONFIG", str(APP_DIR / "config.json")))
 STATE_PATH = APP_DIR / "state.json"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 PANEL_PASSWORD = os.getenv("PANEL_PASSWORD", "")
@@ -31,7 +31,7 @@ templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
 
 
 def load_state() -> dict[str, Any]:
-    default_id = "b8313836-154f-428b-a790-123456789abc"
+    default_id = "2d28f01b-9f9b-432d-9481-9b19dfb4a401"
     if STATE_PATH.exists():
         try:
             state = json.loads(STATE_PATH.read_text())
@@ -39,7 +39,7 @@ def load_state() -> dict[str, Any]:
                 state["users"] = {}
             if not state["users"]:
                 state["users"][default_id] = {
-                    "name": "DefaultUser",
+                    "name": "user1",
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "quota_gb": 100,
                     "used_bytes": 0,
@@ -53,7 +53,7 @@ def load_state() -> dict[str, Any]:
     initial_state = {
         "users": {
             default_id: {
-                "name": "DefaultUser",
+                "name": "user1",
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "quota_gb": 100,
                 "used_bytes": 0,
@@ -99,7 +99,7 @@ def update_xray_config(state: dict[str, Any]) -> None:
     for inbound in cfg.get("inbounds", []):
         if inbound.get("tag") == "vless-in":
             inbound["settings"]["clients"] = clients
-    CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
+    CONFIG_PATH.write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
     reload_xray()
 
 
